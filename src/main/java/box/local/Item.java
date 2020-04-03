@@ -11,7 +11,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Objects;
 
 /**
- * Class Image - 
+ * Class Image -
  *
  * @author Maksim Tiunchik (senebh@gmail.com)
  * @version 0.1
@@ -60,12 +60,16 @@ public class Item {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         Item item = (Item) o;
-        return id.equals(item.id) &&
-                color.equals(item.color) &&
-                Objects.equals(parent, item.parent);
+        return id.equals(item.id)
+                && color.equals(item.color)
+                && Objects.equals(parent, item.parent);
     }
 
     @Override
