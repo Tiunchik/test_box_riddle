@@ -50,7 +50,7 @@ public class QuestionServlet extends HttpServlet {
             String id = (String) json.get("id");
             String color = (String) json.get("color");
             if (id != null && color != null) {
-                List<Integer> answer = BASE.searchItems(Integer.parseInt(id), color);
+                List<Integer> answer = BASE.search(Integer.parseInt(id), color);
                 JSONArray array = new JSONArray();
                 answer.forEach(array::add);
                 out.write(array.toJSONString());

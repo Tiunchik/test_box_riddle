@@ -8,8 +8,10 @@ package box.local;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Objects;
+
 /**
- * Class Box - 
+ * Class Box -
  *
  * @author Maksim Tiunchik (senebh@gmail.com)
  * @version 0.1
@@ -43,5 +45,23 @@ public class Box {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Box box = (Box) o;
+        return Objects.equals(parent, box.parent)
+               && id.equals(box.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(parent, id);
     }
 }

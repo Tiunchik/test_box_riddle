@@ -66,9 +66,10 @@ public class DBStore {
     public void addBox(Box box) {
         try (Connection connection = SOURCE.getConnection();
              PreparedStatement st = connection
-                     .prepareStatement("INSERT INTO box (ID, CONTAINED_IN) VALUES (?,?)")) {
+                     .prepareStatement("INSERT INTO box (ID, CONTAINED_IN, TYPEITEM) VALUES (?,?,?) ON CONFLICT (ID, TYPEITEM) DO NOTHING ")) {
             st.setInt(1, Integer.parseInt(box.getId()));
             st.setInt(2, Integer.parseInt(box.getParent()));
+            st.setString(3, "box");
             st.execute();
         } catch (SQLException e) {
             LOG.error("insert box error", e);
@@ -78,30 +79,41 @@ public class DBStore {
     public void addImage(Item img) {
         try (Connection connection = SOURCE.getConnection();
              PreparedStatement st = connection
-                     .prepareStatement("INSERT INTO item (ID, CONTAINED_IN, COLOR) VALUES (?,?,?)")) {
+                     .prepareStatement("INSERT INTO BOX (ID, CONTAINED_IN, COLOR, TYPEITEM) VALUES (?,?,?, ?) ON CONFLICT (ID, TYPEITEM) DO NOTHING ")) {
             st.setInt(1, Integer.parseInt(img.getId()));
             st.setInt(2, Integer.parseInt(img.getParent()));
             st.setString(3, img.getColor());
+            st.setString(4, "image");
             st.execute();
         } catch (SQLException e) {
             LOG.error("insert image error", e);
         }
     }
 
-    private List<Integer> searcBoxes(int id) {
+    public List<Integer> search(int id, String color) {
         List<Integer> answer = new ArrayList<>(20);
         LinkedList<Integer> searchLine = new LinkedList<>();
         searchLine.add(id);
         while (!searchLine.isEmpty()) {
             int number = searchLine.pollFirst();
-            answer.add(number);
             try (Connection connection = SOURCE.getConnection();
                  PreparedStatement st = connection
-                         .prepareStatement("SELECT ID FROM BOX WHERE CONTAINED_IN = ?")) {
+                         .prepareStatement("SELECT ID, TYPEITEM, COLOR FROM BOX WHERE CONTAINED_IN = ? ")) {
                 st.setInt(1, number);
                 ResultSet result = st.executeQuery();
                 while (result.next()) {
-                    searchLine.add(result.getInt("ID"));
+                    String type = result.getString("TYPEITEM");
+                    int seed = result.getInt("ID");
+                    if (type.equalsIgnoreCase("box")) {
+                        searchLine.add(seed);
+                    }
+                    if (type.equalsIgnoreCase("image")) {
+                        String col = result.getString("COLOR");
+                        if (col != null && col.equalsIgnoreCase(color)) {
+                            answer.add(seed);
+                        }
+
+                    }
                 }
             } catch (SQLException e) {
                 LOG.error("insert image error", e);
@@ -109,41 +121,18 @@ public class DBStore {
         }
         return answer;
     }
-
-    public List<Integer> searchItems(int id, String color) {
-        List<Integer> answer = new ArrayList<>(20);
-        LinkedList<Integer> searchLine = new LinkedList<>(searcBoxes(id));
-        while (!searchLine.isEmpty()) {
-            int number = searchLine.pollFirst();
-            try (Connection connection = SOURCE.getConnection();
-                 PreparedStatement st = connection
-                         .prepareStatement("SELECT ID FROM ITEM WHERE COLOR = ? and CONTAINED_IN = ?")) {
-                st.setString(1, color);
-                st.setInt(2, number);
-                ResultSet result = st.executeQuery();
-                while (result.next()) {
-                    answer.add(result.getInt("ID"));
-                }
-            } catch (SQLException e) {
-                LOG.error("insert image error", e);
-            }
-        }
-        return answer;
-    }
-
 
     private void createTB() {
         try (Connection connection = SOURCE.getConnection()) {
             PreparedStatement st = connection
-                    .prepareStatement("CREATE TABLE IF NOT EXISTS BOX (ID INTEGER PRIMARY KEY, CONTAINED_IN INTEGER)");
-            st.execute();
+                    .prepareStatement("CREATE TABLE BOX (ID INTEGER, TYPE VARCHAR(20), "
+                            + "CONTAINED_IN INTEGER, COLOR VARCHAR(100), "
+                            + "CONSTRAINT uniq UNIQUE (ID,TYPE))");
+            st.addBatch();
             st = connection
-                    .prepareStatement("CREATE TABLE IF NOT EXISTS  ITEM (ID INTEGER PRIMARY KEY, "
-                            + "CONTAINED_IN INTEGER REFERENCES BOX(ID), COLOR VARCHAR(100))");
-            st.execute();
-            st = connection
-                    .prepareStatement("INSERT INTO NOX (ID) VALUES (0) ON CONFLICT DO NOTHING ");
-            st.execute();
+                    .prepareStatement("INSERT INTO BOX (ID, TYPEITEM) VALUES (0, 'box') ON CONFLICT DO NOTHING ");
+            st.addBatch();
+            st.executeBatch();
         } catch (SQLException e) {
             LOG.error("Add method SQL ecxeption", e);
         }
