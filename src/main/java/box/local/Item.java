@@ -8,6 +8,8 @@ package box.local;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Objects;
+
 /**
  * Class Image - 
  *
@@ -54,5 +56,20 @@ public class Item {
 
     public void setColor(String color) {
         this.color = color;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Item item = (Item) o;
+        return id.equals(item.id) &&
+                color.equals(item.color) &&
+                Objects.equals(parent, item.parent);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, color, parent);
     }
 }
